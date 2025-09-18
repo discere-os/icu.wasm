@@ -1,53 +1,59 @@
 {
-  "name": "@superstruct/icu.wasm",
+  "name": "@discere-os/icu.wasm",
   "version": "75.1.0",
-  "description": "International Components for Unicode (ICU) compiled to WebAssembly",
-  "main": "dist/icu.js",
-  "module": "dist/icu.js",
-  "types": "dist/icu-wasm.d.ts",
+  "description": "Enhanced WebAssembly implementation of ICU with SIMD optimization and Deno-first wrapper",
+  "main": "install/wasm/icu-main.js",
+  "module": "install/wasm/icu-main.js",
+  "types": "src/lib/types.ts",
   "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/icu.js",
-      "require": "./dist/icu.js",
-      "types": "./dist/icu-wasm.d.ts"
+      "import": "./src/lib/index.ts",
+      "types": "./src/lib/types.ts"
     },
-    "./core": {
-      "import": "./dist/icu-core.js",
-      "types": "./dist/icu-wasm.d.ts"
+    "./types": {
+      "import": "./src/lib/types.ts"
     },
-    "./i18n": {
-      "import": "./dist/icu-i18n.js", 
-      "types": "./dist/icu-wasm.d.ts"
+    "./simd": {
+      "import": "./src/lib/simd.ts",
+      "types": "./src/lib/types.ts"
     },
-    "./wrapper": {
-      "import": "./dist/icu-wasm.js",
-      "types": "./dist/icu-wasm.d.ts"
+    "./side": {
+      "import": "./install/wasm/icu-side.wasm"
+    },
+    "./main": {
+      "import": "./install/wasm/icu-main.js"
     },
     "./package.json": "./package.json"
   },
   "files": [
-    "dist/",
-    "LICENSE"
+    "src/",
+    "install/",
+    "wasm/",
+    "LICENSE",
+    "README.md"
   ],
   "scripts": {
-    "build": "./build-wasm.sh",
-    "build:threaded": "./build-wasm-threaded.sh",
-    "test": "node test/test-icu-wasm.js",
-    "test:basic": "node test/basic-test.mjs",
-    "test:performance": "node test/performance-test.js",
-    "test:threaded": "node --experimental-wasm-threads test/test-icu-threaded.js",
-    "benchmark": "npm run test:performance",
-    "benchmark:threaded": "npm run test:threaded",
-    "clean": "rm -rf dist/ dist-threaded/ build/ build-threaded/ artifacts/",
-    "serve": "python3 -m http.server 8080 --bind 0.0.0.0",
-    "serve:headers": "node scripts/serve-with-headers.js",
-    "act:test": "act push -j build --matrix config:Release,optimization:ON",
-    "act:threaded": "act push -j threaded-build",
-    "act:full": "act push",
-    "act:performance": "act push -j performance",
-    "lint": "echo 'No linting configured for C/C++ project'",
-    "typecheck": "tsc --noEmit dist/icu-wasm.d.ts"
+    "build": "./build-dual.sh all",
+    "build:side": "./build-dual.sh side",
+    "build:main": "./build-dual.sh main",
+    "build:npm": "deno run --allow-all _build_npm.ts",
+    "demo": "deno run --allow-read --allow-write demo-deno.ts",
+    "demo:simple": "deno run --allow-read --allow-write demo-deno-simple.ts",
+    "demo:simd": "deno run --allow-read --allow-write demo-deno-simd.ts",
+    "test": "deno test --allow-read tests/deno/",
+    "test:basic": "deno test --allow-read tests/deno/basic.test.ts",
+    "test:collation": "deno test --allow-read tests/deno/collation.test.ts",
+    "test:formatting": "deno test --allow-read tests/deno/formatting.test.ts",
+    "test:normalization": "deno test --allow-read tests/deno/normalization.test.ts",
+    "test:simd": "deno test --allow-read tests/deno/simd.test.ts",
+    "bench": "deno bench --allow-read bench/",
+    "bench:collation": "deno bench --allow-read bench/collation.bench.ts",
+    "bench:simd": "deno bench --allow-read bench/simd.bench.ts",
+    "clean": "rm -rf build-dual-* install/ npm/ dist/",
+    "check": "deno check src/lib/index.ts",
+    "fmt": "deno fmt src/ tests/ demo-deno*.ts bench/",
+    "lint": "deno lint src/ tests/ demo-deno*.ts bench/"
   },
   "keywords": [
     "icu",
@@ -66,15 +72,17 @@
   "license": "Unicode-3.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/superstruct/icu.wasm.git",
-    "branch": "wasm"
+    "url": "https://github.com/discere-os/discere-nucleus.git",
+    "directory": "client/emscripten/icu.wasm",
+    "branch": "main"
   },
   "bugs": {
-    "url": "https://github.com/superstruct/icu.wasm/issues"
+    "url": "https://github.com/discere-os/discere-nucleus/issues"
   },
-  "homepage": "https://github.com/superstruct/icu.wasm#readme",
+  "homepage": "https://github.com/discere-os/discere-nucleus/tree/main/client/emscripten/icu.wasm#readme",
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0",
+    "deno": ">=1.40.0"
   },
   "devDependencies": {},
   "peerDependencies": {},

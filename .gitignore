@@ -282,21 +282,50 @@ tools/unicode/c/genuca/genuca
 tools/unicode/c/genuca/genuca.8
 tools/unicode/c/icudefs.txt
 
-# WASM build artifacts and development files
+# Enhanced WASM build artifacts and development files
 dist/
 dist-threaded/
-build-native/
+build-*/
+build_*/
+wasm_wrapper/
 artifacts/
+npm/
 benchmark-results.json
 benchmark-report-*.json
 
-# WASM-specific files
-*.wasm
-*.js.mem
-*.js.symbols
+# Keep existing build directories that are already tracked
+!build-threaded/
+!build-native/
+
+# Enhanced WASM-specific files - keep WASM modules for development
+install/wasm/*.wasm
+install/wasm/*.js
+install/wasm/*.mem
+install/wasm/*.symbols
 *.js.temp
 *.wast
 *.wat
+
+# Working files for development (can be regenerated)
+*-working.ts
+demo-working.ts
+perf-test.ts
+test-working.ts
+build-working.sh
+build-manual.sh
+
+# Test and temporary files
+test_basic.c
+test_basic.js
+test.c
+test.wasm
+*.test
+config.log
+config.status
+autom4te.cache/
+
+# Deno-first development
+deno.lock
 
 # Emscripten cache and tools
 emsdk/
