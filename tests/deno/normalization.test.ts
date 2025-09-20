@@ -210,7 +210,8 @@ Deno.test("Normalization - invalid form should throw", async () => {
     icu.normalize("test", "INVALID");
     assert(false, "Should have thrown an error");
   } catch (error) {
-    assert(error.message.includes("Unsupported normalization form"));
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    assert(errorMsg.includes("Unsupported normalization form"));
   }
 
   icu.cleanup();

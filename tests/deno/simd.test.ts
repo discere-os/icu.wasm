@@ -189,8 +189,8 @@ Deno.test("SIMD - benchmark", async () => {
   assertExists(benchmark);
   assertEquals(benchmark.operation, "mixed_unicode_operations");
   assertEquals(benchmark.iterations, 10000);
-  assert(benchmark.throughputMBps >= 0);
-  assert(benchmark.simdSpeedup >= 1.0);
+  assert(benchmark.throughputMBps! >= 0);
+  assert(benchmark.simdSpeedup! >= 1.0);
 
   cleanup();
 });
@@ -215,8 +215,8 @@ Deno.test("SIMD - performance tests", async () => {
     assert(result.iterations >= 1);
     assert(result.totalTimeMs >= 0);
     assert(result.averageTimeMs >= 0);
-    assert(result.throughputMBps >= 0);
-    assert(result.simdSpeedup >= 1.0);
+    assert(result.throughputMBps! >= 0);
+    assert(result.simdSpeedup! >= 1.0);
   }
 
   cleanup();

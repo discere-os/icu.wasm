@@ -1,4 +1,4 @@
-import { assert, assertEquals, assertExists, assertRejects } from "@std/assert";
+import { assert, assertEquals, assertExists, assertThrows } from "@std/assert";
 import ICU from "../../src/lib/index.ts";
 
 Deno.test("ICU initialization", async () => {
@@ -29,13 +29,13 @@ Deno.test("ICU version information", async () => {
   icu.cleanup();
 });
 
-Deno.test("ICU initialization without proper setup should throw", async () => {
+Deno.test("ICU initialization without proper setup should throw", () => {
   const icu = new ICU();
 
   // Should throw when not initialized
-  assertRejects(() => {
-    return Promise.resolve(icu.getVersion());
-  }, "ICU not initialized");
+  assertThrows(() => {
+    icu.getVersion();
+  }, Error, "ICU not initialized");
 });
 
 Deno.test("ICU cleanup multiple times", async () => {

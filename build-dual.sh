@@ -211,7 +211,7 @@ build_main_module() {
         -sEXPORT_ES6=1 \
         -sEXPORT_NAME="ICUModule" \
         -sEXPORTED_FUNCTIONS='["_malloc","_free","_u_init","_u_cleanup","_u_getVersion","_ucol_open","_ucol_close","_ucol_compare","_udat_open","_udat_close","_udat_format","_unum_open","_unum_close","_unum_formatDouble","_unorm2_getInstance","_unorm2_normalize","_ustring_compare","_icu_simd_available","_icu_is_ascii_simd","_icu_validate_utf8_simd","_icu_string_compare_simd","_icu_to_upper_ascii_simd","_icu_to_lower_ascii_simd","_icu_find_char_simd","_icu_count_combining_marks_simd","_icu_benchmark_string_ops_simd","_icu_benchmark_comparison"]' \
-        -sEXPORTED_RUNTIME_METHODS='["ccall","cwrap","UTF8ToString","stringToUTF8","lengthBytesUTF8","HEAPU8","HEAP8","HEAP16","HEAP32","HEAPU16","HEAPU32"]' \
+        -sEXPORTED_RUNTIME_METHODS='["ccall","cwrap","UTF8ToString","stringToUTF8","stringToUTF8OnStack","lengthBytesUTF8","HEAPU8","HEAP8","HEAP16","HEAP32","HEAPU16","HEAPU32"]' \
         -sALLOW_MEMORY_GROWTH=1 \
         -sINITIAL_MEMORY=67108864 \
         -sMAXIMUM_MEMORY=536870912 \
