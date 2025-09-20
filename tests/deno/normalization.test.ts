@@ -6,7 +6,7 @@ Deno.test("Normalization - NFC form", async () => {
   await icu.initialize();
 
   // Test with composed and decomposed forms
-  const composed = "café"; // é as single character
+  const _composed = "café"; // é as single character
   const decomposed = "cafe\u0301"; // e + combining acute accent
 
   const result = icu.normalize(decomposed, "NFC");
@@ -189,8 +189,8 @@ Deno.test("Normalization - all forms comparison", async () => {
 
   // NFC and NFKC might be the same for this simple case
   // NFD and NFKD should decompose the é
-  const nfc = results.find(r => r.form === "NFC")?.result;
-  const nfd = results.find(r => r.form === "NFD")?.result;
+  const nfc = results.find((r) => r.form === "NFC")?.result;
+  const nfd = results.find((r) => r.form === "NFD")?.result;
 
   assertExists(nfc);
   assertExists(nfd);

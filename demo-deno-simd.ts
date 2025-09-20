@@ -22,7 +22,7 @@ async function simdDemo() {
 
   // Check SIMD availability
   const available = simd.isAvailable();
-  console.log(`📊 SIMD Available: ${available ? '✅' : '❌'}`);
+  console.log(`📊 SIMD Available: ${available ? "✅" : "❌"}`);
 
   if (!available) {
     console.log("❌ SIMD not available - demo will show placeholder results");
@@ -41,10 +41,14 @@ async function simdDemo() {
   const testData = {
     smallAscii: "Hello World!",
     smallUnicode: "Hello 世界! café naïve",
-    mediumMixed: "The quick brown fox jumps over the lazy dog. Unicode test: café naïve résumé 世界 🚀 ∑∏∫ العربية".repeat(10),
-    largeMixed: "Performance testing with mixed content. ASCII and Unicode: café naïve résumé München 北京 العربية Русский 🚀 ".repeat(500),
+    mediumMixed:
+      "The quick brown fox jumps over the lazy dog. Unicode test: café naïve résumé 世界 🚀 ∑∏∫ العربية"
+        .repeat(10),
+    largeMixed:
+      "Performance testing with mixed content. ASCII and Unicode: café naïve résumé München 北京 العربية Русский 🚀 "
+        .repeat(500),
     hugeAscii: "A".repeat(50000),
-    combining: "cafe\u0301 nai\u0308ve re\u0301sume\u0301 ".repeat(1000)
+    combining: "cafe\u0301 nai\u0308ve re\u0301sume\u0301 ".repeat(1000),
   };
 
   // ASCII Detection Comparison
@@ -52,9 +56,11 @@ async function simdDemo() {
   console.log("   " + "-".repeat(30));
 
   for (const [name, text] of Object.entries(testData)) {
-    if (name === 'hugeAscii') continue; // Skip huge for readability
+    if (name === "hugeAscii") continue; // Skip huge for readability
 
-    console.log(`\n   Testing: ${name} (${text.length.toLocaleString()} chars)`);
+    console.log(
+      `\n   Testing: ${name} (${text.length.toLocaleString()} chars)`,
+    );
 
     // SIMD version
     const simdStart = performance.now();
@@ -76,7 +82,11 @@ async function simdDemo() {
     const standardTime = standardEnd - standardStart;
     const speedup = standardTime > 0 ? standardTime / simdTime : 1;
 
-    console.log(`   📊 Result: ${simdResult.result} (both methods: ${simdResult.result === standardResult ? '✅' : '❌'})`);
+    console.log(
+      `   📊 Result: ${simdResult.result} (both methods: ${
+        simdResult.result === standardResult ? "✅" : "❌"
+      })`,
+    );
     console.log(`   ⚡ SIMD:     ${simdTime.toFixed(3)}ms`);
     console.log(`   🐌 Standard: ${standardTime.toFixed(3)}ms`);
     console.log(`   🚀 Speedup:  ${speedup.toFixed(1)}x`);
@@ -89,16 +99,22 @@ async function simdDemo() {
   const validationTests = [
     testData.smallUnicode,
     testData.mediumMixed,
-    testData.combining
+    testData.combining,
   ];
 
   for (const [i, text] of validationTests.entries()) {
-    console.log(`\n   Test ${i + 1}: ${text.slice(0, 50)}... (${text.length} chars)`);
+    console.log(
+      `\n   Test ${i + 1}: ${text.slice(0, 50)}... (${text.length} chars)`,
+    );
 
     const result = simd.validateUTF8(text);
     console.log(`   📊 Valid UTF-8: ${result.result}`);
-    console.log(`   ⚡ Time: ${result.performance.averageLatencyMs.toFixed(3)}ms`);
-    console.log(`   📈 Throughput: ${result.performance.operationsPerSecond.toLocaleString()} ops/sec`);
+    console.log(
+      `   ⚡ Time: ${result.performance.averageLatencyMs.toFixed(3)}ms`,
+    );
+    console.log(
+      `   📈 Throughput: ${result.performance.operationsPerSecond.toLocaleString()} ops/sec`,
+    );
   }
 
   // String Comparison
@@ -108,15 +124,29 @@ async function simdDemo() {
   const comparisonTests = [
     [testData.smallAscii, testData.smallAscii + "X"],
     [testData.smallUnicode, testData.smallUnicode.replace("世界", "world")],
-    [testData.largeMixed, testData.largeMixed + "END"]
+    [testData.largeMixed, testData.largeMixed + "END"],
   ];
 
   for (const [i, [str1, str2]] of comparisonTests.entries()) {
-    console.log(`\n   Test ${i + 1}: Comparing strings (${str1.length} vs ${str2.length} chars)`);
+    console.log(
+      `\n   Test ${
+        i + 1
+      }: Comparing strings (${str1.length} vs ${str2.length} chars)`,
+    );
 
     const result = simd.compareStrings(str1, str2);
-    console.log(`   📊 Result: ${result.result} (${result.result === 0 ? 'equal' : result.result < 0 ? 'first < second' : 'first > second'})`);
-    console.log(`   ⚡ Time: ${result.performance.averageLatencyMs.toFixed(3)}ms`);
+    console.log(
+      `   📊 Result: ${result.result} (${
+        result.result === 0
+          ? "equal"
+          : result.result < 0
+          ? "first < second"
+          : "first > second"
+      })`,
+    );
+    console.log(
+      `   ⚡ Time: ${result.performance.averageLatencyMs.toFixed(3)}ms`,
+    );
   }
 
   // Case Conversion
@@ -126,20 +156,26 @@ async function simdDemo() {
   const caseTests = [
     "hello world",
     "the quick brown fox jumps over the lazy dog",
-    "performance testing string ".repeat(100)
+    "performance testing string ".repeat(100),
   ];
 
   for (const [i, text] of caseTests.entries()) {
-    console.log(`\n   Test ${i + 1}: "${text.slice(0, 30)}..." (${text.length} chars)`);
+    console.log(
+      `\n   Test ${i + 1}: "${text.slice(0, 30)}..." (${text.length} chars)`,
+    );
 
     // Uppercase conversion
     const upperResult = simd.toUppercaseASCII(text);
     console.log(`   📊 Uppercase: "${upperResult.result.slice(0, 30)}..."`);
-    console.log(`   ⚡ Time: ${upperResult.performance.averageLatencyMs.toFixed(3)}ms`);
+    console.log(
+      `   ⚡ Time: ${upperResult.performance.averageLatencyMs.toFixed(3)}ms`,
+    );
 
     // Lowercase conversion of the result
     const lowerResult = simd.toLowercaseASCII(upperResult.result);
-    console.log(`   📊 Roundtrip: ${text === lowerResult.result ? '✅' : '❌'}`);
+    console.log(
+      `   📊 Roundtrip: ${text === lowerResult.result ? "✅" : "❌"}`,
+    );
   }
 
   // Character Search
@@ -149,18 +185,28 @@ async function simdDemo() {
   const searchTests = [
     { text: testData.mediumMixed, char: "o", expected: "found" },
     { text: testData.mediumMixed, char: "z", expected: "not found" },
-    { text: testData.largeMixed, char: "U", expected: "found" }
+    { text: testData.largeMixed, char: "U", expected: "found" },
   ];
 
   for (const [i, { text, char, expected }] of searchTests.entries()) {
-    console.log(`\n   Test ${i + 1}: Searching for '${char}' in ${text.length} chars`);
+    console.log(
+      `\n   Test ${i + 1}: Searching for '${char}' in ${text.length} chars`,
+    );
 
     const result = simd.findCharacter(text, char);
     const found = result.result >= 0;
 
-    console.log(`   📊 Result: ${found ? `found at position ${result.result}` : 'not found'} (${expected})`);
-    console.log(`   ⚡ Time: ${result.performance.averageLatencyMs.toFixed(3)}ms`);
-    console.log(`   📈 Throughput: ${result.performance.operationsPerSecond.toLocaleString()} chars/sec`);
+    console.log(
+      `   📊 Result: ${
+        found ? `found at position ${result.result}` : "not found"
+      } (${expected})`,
+    );
+    console.log(
+      `   ⚡ Time: ${result.performance.averageLatencyMs.toFixed(3)}ms`,
+    );
+    console.log(
+      `   📈 Throughput: ${result.performance.operationsPerSecond.toLocaleString()} chars/sec`,
+    );
   }
 
   // Combining Marks Detection
@@ -170,16 +216,23 @@ async function simdDemo() {
   const combiningTests = [
     { name: "No combining marks", text: "hello world" },
     { name: "Single combining mark", text: "cafe\u0301" },
-    { name: "Multiple combining marks", text: testData.combining.slice(0, 100) },
-    { name: "Large text with marks", text: testData.combining }
+    {
+      name: "Multiple combining marks",
+      text: testData.combining.slice(0, 100),
+    },
+    { name: "Large text with marks", text: testData.combining },
   ];
 
   for (const { name, text } of combiningTests) {
-    console.log(`\n   ${name}: "${text.slice(0, 30)}..." (${text.length} chars)`);
+    console.log(
+      `\n   ${name}: "${text.slice(0, 30)}..." (${text.length} chars)`,
+    );
 
     const result = simd.countCombiningMarks(text);
     console.log(`   📊 Combining marks found: ${result.result}`);
-    console.log(`   ⚡ Time: ${result.performance.averageLatencyMs.toFixed(3)}ms`);
+    console.log(
+      `   ⚡ Time: ${result.performance.averageLatencyMs.toFixed(3)}ms`,
+    );
   }
 
   // Comprehensive Benchmark
@@ -199,7 +252,8 @@ async function simdDemo() {
   const realWorldTexts = [
     "Short user input with émojis 🚀",
     "Medium document content with international characters: café naïve résumé München 北京",
-    "Large document processing: ".repeat(200) + "with Unicode content: café naïve 世界 العربية"
+    "Large document processing: ".repeat(200) +
+    "with Unicode content: café naïve 世界 العربية",
   ];
 
   const performanceResults = await simd.runPerformanceTests(realWorldTexts);

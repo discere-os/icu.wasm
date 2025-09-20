@@ -33,9 +33,13 @@ Deno.test("ICU initialization without proper setup should throw", () => {
   const icu = new ICU();
 
   // Should throw when not initialized
-  assertThrows(() => {
-    icu.getVersion();
-  }, Error, "ICU not initialized");
+  assertThrows(
+    () => {
+      icu.getVersion();
+    },
+    Error,
+    "ICU not initialized",
+  );
 });
 
 Deno.test("ICU cleanup multiple times", async () => {
@@ -56,7 +60,7 @@ Deno.test("ICU options configuration", async () => {
   const icu = new ICU({
     simdOptimizations: true,
     maxMemoryMB: 128,
-    locale: "en-US"
+    locale: "en-US",
   });
 
   await icu.initialize();

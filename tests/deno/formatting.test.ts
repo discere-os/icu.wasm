@@ -40,7 +40,7 @@ Deno.test("Date formatting - different locales", async () => {
   }
 
   // Different locales should produce different formats
-  const uniqueFormats = new Set(results.map(r => r.formatted));
+  const uniqueFormats = new Set(results.map((r) => r.formatted));
   // At least some should be different (though some might be the same)
   assert(uniqueFormats.size >= 1);
 
@@ -56,8 +56,8 @@ Deno.test("Date formatting - different styles", async () => {
 
   for (const style of styles) {
     const formatter = icu.createDateFormatter("en", {
-      dateStyle: style as any,
-      timeStyle: style as any
+      dateStyle: style as "full" | "long" | "medium" | "short",
+      timeStyle: style as "full" | "long" | "medium" | "short",
     });
 
     const formatted = formatter.format(testDate);
@@ -114,7 +114,7 @@ Deno.test("Number formatting - different styles", async () => {
   const styles = ["decimal", "percent", "scientific"];
 
   for (const style of styles) {
-    const formatter = icu.createNumberFormatter("en", { style: style as any });
+    const formatter = icu.createNumberFormatter("en", { style: style as "decimal" | "percent" | "scientific" });
     const formatted = formatter.format(testNumber);
 
     assertExists(formatted);
@@ -176,14 +176,17 @@ Deno.test("Number formatting - currency style", async () => {
 
   const formatter = icu.createNumberFormatter("en", {
     style: "currency",
-    currency: "USD"
+    currency: "USD",
   });
 
   const formatted = formatter.format(123.45);
   assertExists(formatted);
   assert(formatted.length > 0);
   // Should contain some currency indication
-  assert(formatted.includes("$") || formatted.includes("US") || formatted.includes("123"));
+  assert(
+    formatted.includes("$") || formatted.includes("US") ||
+      formatted.includes("123"),
+  );
 
   formatter.close();
   icu.cleanup();

@@ -13,7 +13,7 @@ console.log("=" + "=".repeat(60));
 
 const icu = new ICU({
   simdOptimizations: true,
-  maxMemoryMB: 128
+  maxMemoryMB: 128,
 });
 
 try {
@@ -59,7 +59,7 @@ try {
   for (const locale of locales) {
     const formatter = icu.createDateFormatter(locale, {
       dateStyle: "full",
-      timeStyle: "short"
+      timeStyle: "short",
     });
     const formatted = formatter.format(testDate);
     console.log(`  ${locale}: ${formatted}`);
@@ -74,15 +74,17 @@ try {
     { style: "decimal", locale: "en" },
     { style: "decimal", locale: "de" },
     { style: "currency", locale: "en", currency: "USD" },
-    { style: "percent", locale: "en" }
+    { style: "percent", locale: "en" },
   ];
 
   for (const config of numberStyles) {
     const formatter = icu.createNumberFormatter(config.locale, {
-      style: config.style as any,
-      currency: config.currency
+      style: config.style as "decimal" | "currency" | "percent" | "scientific" | "compact",
+      currency: config.currency,
     });
-    const formatted = formatter.format(config.style === "percent" ? 0.123456 : testNumber);
+    const formatted = formatter.format(
+      config.style === "percent" ? 0.123456 : testNumber,
+    );
     console.log(`  ${config.locale} ${config.style}: ${formatted}`);
     formatter.close();
   }
@@ -91,17 +93,21 @@ try {
   console.log("-".repeat(40));
 
   const testTexts = [
-    "café",           // é as single character
-    "cafe\u0301",     // e + combining acute accent
-    "ﬁle",            // fi ligature
-    "Zürich"
+    "café", // é as single character
+    "cafe\u0301", // e + combining acute accent
+    "ﬁle", // fi ligature
+    "Zürich",
   ];
 
   for (const text of testTexts) {
     console.log(`\nText: "${text}" (${text.length} chars)`);
     for (const form of ["NFC", "NFD", "NFKC", "NFKD"] as const) {
       const result = icu.normalize(text, form);
-      console.log(`  ${form}: "${result.normalized}" (${result.normalized.length} chars) ${result.isNormalized ? '✓' : '✗'}`);
+      console.log(
+        `  ${form}: "${result.normalized}" (${result.normalized.length} chars) ${
+          result.isNormalized ? "✓" : "✗"
+        }`,
+      );
     }
   }
 
@@ -120,35 +126,55 @@ try {
     console.log(`🎯 Features: ${capabilities.features.join(", ")}`);
 
     // ASCII detection performance
-    const testText = "Hello World! This is a test string for SIMD optimization demo.";
-    const unicodeText = "Hello 世界! This contains Unicode: café naïve résumé 🚀";
+    const testText =
+      "Hello World! This is a test string for SIMD optimization demo.";
+    const unicodeText =
+      "Hello 世界! This contains Unicode: café naïve résumé 🚀";
 
     console.log("\n🔍 ASCII Detection:");
     const asciiResult = simd.isASCII(testText);
     console.log(`  "${testText.slice(0, 30)}..."`);
-    console.log(`  Result: ${asciiResult.result} (${asciiResult.performance.averageLatencyMs.toFixed(2)}ms)`);
+    console.log(
+      `  Result: ${asciiResult.result} (${
+        asciiResult.performance.averageLatencyMs.toFixed(2)
+      }ms)`,
+    );
 
     const unicodeResult = simd.isASCII(unicodeText);
     console.log(`  "${unicodeText.slice(0, 30)}..."`);
-    console.log(`  Result: ${unicodeResult.result} (${unicodeResult.performance.averageLatencyMs.toFixed(2)}ms)`);
+    console.log(
+      `  Result: ${unicodeResult.result} (${
+        unicodeResult.performance.averageLatencyMs.toFixed(2)
+      }ms)`,
+    );
 
     // UTF-8 validation
     console.log("\n✅ UTF-8 Validation:");
     const validationResult = simd.validateUTF8(unicodeText);
-    console.log(`  Valid UTF-8: ${validationResult.result} (${validationResult.performance.averageLatencyMs.toFixed(2)}ms)`);
+    console.log(
+      `  Valid UTF-8: ${validationResult.result} (${
+        validationResult.performance.averageLatencyMs.toFixed(2)
+      }ms)`,
+    );
 
     // Case conversion
     console.log("\n🔄 Case Conversion:");
     const caseResult = simd.toUppercaseASCII("hello world simd optimization");
     console.log(`  Original: "hello world simd optimization"`);
     console.log(`  Uppercase: "${caseResult.result}"`);
-    console.log(`  Performance: ${caseResult.performance.averageLatencyMs.toFixed(2)}ms`);
+    console.log(
+      `  Performance: ${caseResult.performance.averageLatencyMs.toFixed(2)}ms`,
+    );
 
     // Character search
     console.log("\n🔎 Character Search:");
     const searchResult = simd.findCharacter(testText, "o");
     console.log(`  Searching for 'o' in: "${testText}"`);
-    console.log(`  Found at position: ${searchResult.result} (${searchResult.performance.averageLatencyMs.toFixed(2)}ms)`);
+    console.log(
+      `  Found at position: ${searchResult.result} (${
+        searchResult.performance.averageLatencyMs.toFixed(2)
+      }ms)`,
+    );
 
     // Performance benchmark
     console.log("\n⏱️  Performance Benchmark:");
@@ -157,7 +183,6 @@ try {
     console.log(`  Iterations: ${benchmark.iterations.toLocaleString()}`);
     console.log(`  SIMD Speedup: ${benchmark.simdSpeedup?.toFixed(1)}x`);
     console.log(`  Throughput: ${benchmark.throughputMBps?.toFixed(1)} MB/s`);
-
   } else {
     console.log("❌ SIMD optimizations not available");
   }
@@ -168,7 +193,7 @@ try {
 
   const metrics = icu.getPerformanceMetrics();
   console.log(`Memory Usage: ${metrics.memoryUsageMB} MB`);
-  console.log(`SIMD Enabled: ${metrics.simdUsed ? '✅' : '❌'}`);
+  console.log(`SIMD Enabled: ${metrics.simdUsed ? "✅" : "❌"}`);
 
   // Real-world example
   console.log("\n🌐 Real-World Example: Multi-language Content Processing");
@@ -182,7 +207,7 @@ try {
     "Chinese: 你好世界！",
     "Arabic: مرحبا بالعالم!",
     "Russian: Привет мир!",
-    "Japanese: こんにちは世界！"
+    "Japanese: こんにちは世界！",
   ];
 
   console.log("Processing multilingual content:");
@@ -192,7 +217,11 @@ try {
     const isValidUtf8 = simd.validateUTF8(content);
 
     console.log(`  ${content}`);
-    console.log(`    ASCII: ${isAscii.result ? '✅' : '❌'}, UTF-8: ${isValidUtf8.result ? '✅' : '❌'}, Normalized: ${normalizedNFC.isNormalized ? '✅' : '🔄'}`);
+    console.log(
+      `    ASCII: ${isAscii.result ? "✅" : "❌"}, UTF-8: ${
+        isValidUtf8.result ? "✅" : "❌"
+      }, Normalized: ${normalizedNFC.isNormalized ? "✅" : "🔄"}`,
+    );
   }
 
   console.log("\n🎯 Use Cases Demonstrated:");
@@ -201,7 +230,6 @@ try {
   console.log("  • Unicode normalization for text processing");
   console.log("  • SIMD-optimized string operations for performance");
   console.log("  • Multi-language content validation and processing");
-
 } catch (error) {
   console.error("❌ Error during demo:", error);
 } finally {

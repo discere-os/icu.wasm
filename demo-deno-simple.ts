@@ -19,7 +19,11 @@ async function simpleDemo() {
   console.log("\n1️⃣ Text Comparison");
   const collator = icu.createCollator("en");
   const result = collator.compare("apple", "banana");
-  console.log(`   "apple" vs "banana": ${result} (${result < 0 ? "apple comes first" : "banana comes first"})`);
+  console.log(
+    `   "apple" vs "banana": ${result} (${
+      result < 0 ? "apple comes first" : "banana comes first"
+    })`,
+  );
   collator.close();
 
   // 2. Date Formatting
@@ -31,7 +35,10 @@ async function simpleDemo() {
 
   // 3. Number Formatting
   console.log("\n3️⃣ Number Formatting");
-  const numberFormatter = icu.createNumberFormatter("en", { style: "currency", currency: "USD" });
+  const numberFormatter = icu.createNumberFormatter("en", {
+    style: "currency",
+    currency: "USD",
+  });
   const formattedNumber = numberFormatter.format(1234.56);
   console.log(`   Price: ${formattedNumber}`);
   numberFormatter.close();
@@ -41,7 +48,11 @@ async function simpleDemo() {
   const text = "café"; // Single character é
   const decomposed = "cafe\u0301"; // e + combining accent
   const normalized = icu.normalize(decomposed, "NFC");
-  console.log(`   "${text}" === "${normalized.normalized}": ${text === normalized.normalized}`);
+  console.log(
+    `   "${text}" === "${normalized.normalized}": ${
+      text === normalized.normalized
+    }`,
+  );
 
   icu.cleanup();
   console.log("\n✅ Demo complete!");

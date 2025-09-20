@@ -13,7 +13,10 @@ const testStrings = {
   ascii: ["apple", "banana", "cherry", "date", "elderberry"],
   unicode: ["café", "naïve", "résumé", "München", "北京"],
   mixed: ["apple", "café", "banana", "naïve", "cherry", "résumé"],
-  long: Array.from({ length: 100 }, (_, i) => `test_string_${i}_with_some_content`)
+  long: Array.from(
+    { length: 100 },
+    (_, i) => `test_string_${i}_with_some_content`,
+  ),
 };
 
 // Basic string comparison

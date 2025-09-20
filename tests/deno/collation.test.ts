@@ -80,7 +80,9 @@ Deno.test("Collation - sort keys", async () => {
   }
 
   // Different strings should produce different sort keys
-  assert(key1.length !== key2.length || !key1.every((byte, i) => byte === key2[i]));
+  assert(
+    key1.length !== key2.length || !key1.every((byte, i) => byte === key2[i]),
+  );
 
   collator.close();
   icu.cleanup();

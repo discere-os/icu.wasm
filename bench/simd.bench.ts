@@ -15,11 +15,13 @@ await (async () => {
 // Test data
 const testTexts = {
   ascii: "Hello World! This is a simple ASCII text for testing performance.",
-  unicode: "Hello 世界! This contains Unicode: café naïve résumé العربية Русский",
-  mixed: "Mixed content: Hello World 123! Unicode: café naïve 世界 🚀 ∑∏∫ العربية",
+  unicode:
+    "Hello 世界! This contains Unicode: café naïve résumé العربية Русский",
+  mixed:
+    "Mixed content: Hello World 123! Unicode: café naïve 世界 🚀 ∑∏∫ العربية",
   large: "Performance test string with Unicode content. ".repeat(1000), // ~50KB
   huge: "A".repeat(100000), // 100KB ASCII
-  combining: "cafe\u0301 nai\u0308ve re\u0301sume\u0301".repeat(100) // Text with combining marks
+  combining: "cafe\u0301 nai\u0308ve re\u0301sume\u0301".repeat(100), // Text with combining marks
 };
 
 // ASCII Detection Benchmarks
@@ -116,10 +118,10 @@ Deno.bench("SIMD - Combining marks (mixed text)", () => {
 // ASCII Detection: SIMD vs Standard
 Deno.bench("Standard - ASCII detection", () => {
   const text = testTexts.ascii;
-  let isASCII = true;
+  let _isASCII = true;
   for (let i = 0; i < text.length; i++) {
     if (text.charCodeAt(i) > 127) {
-      isASCII = false;
+      _isASCII = false;
       break;
     }
   }
@@ -180,16 +182,20 @@ Deno.bench("SIMD - Memory intensive (1MB text)", { group: "memory" }, () => {
   simd.isASCII(megabyteText);
 });
 
-Deno.bench("Standard - Memory intensive (1MB text)", { group: "memory" }, () => {
-  const megabyteText = testTexts.mixed.repeat(20000); // ~1MB
-  let isASCII = true;
-  for (let i = 0; i < megabyteText.length; i++) {
-    if (megabyteText.charCodeAt(i) > 127) {
-      isASCII = false;
-      break;
+Deno.bench(
+  "Standard - Memory intensive (1MB text)",
+  { group: "memory" },
+  () => {
+    const megabyteText = testTexts.mixed.repeat(20000); // ~1MB
+    let _isASCII = true;
+    for (let i = 0; i < megabyteText.length; i++) {
+      if (megabyteText.charCodeAt(i) > 127) {
+        _isASCII = false;
+        break;
+      }
     }
-  }
-});
+  },
+);
 
 // Real-world Simulation Benchmarks
 Deno.bench("SIMD - Text validation pipeline", () => {
