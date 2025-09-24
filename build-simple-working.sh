@@ -35,6 +35,9 @@ emcc -O3 -flto -msimd128 \
     -sSTACK_SIZE=1048576 \
     wasm_wrapper/icu_wrapper.cpp \
     wasm/icu_simd.c \
+    wasm/web_native_intl_capabilities.c \
+    wasm/web_native_intl_delegation.c \
+    wasm/web_native_intl_hybrid.c \
     -o "${INSTALL_PREFIX}/wasm/icu-main.js"
 
 echo "Built: ${INSTALL_PREFIX}/wasm/icu-main.js"
@@ -45,9 +48,15 @@ emcc -O3 -flto -msimd128 \
     -sEXPORTED_FUNCTIONS='[
         "_icu_simd_available","_icu_is_ascii_simd","_icu_validate_utf8_simd",
         "_icu_string_compare_simd","_icu_to_upper_ascii_simd","_icu_to_lower_ascii_simd",
-        "_icu_find_char_simd","_icu_count_combining_marks_simd","_icu_benchmark_comparison"
+        "_icu_find_char_simd","_icu_count_combining_marks_simd","_icu_benchmark_comparison",
+        "_detect_intl_capabilities","_log_intl_capabilities","_can_delegate_number_format",
+        "_can_delegate_date_format","_can_delegate_collation","_format_number_hybrid",
+        "_format_date_hybrid","_compare_strings_hybrid","_get_plural_rule_hybrid","_format_list_hybrid"
     ]' \
     wasm/icu_simd.c \
+    wasm/web_native_intl_capabilities.c \
+    wasm/web_native_intl_delegation.c \
+    wasm/web_native_intl_hybrid.c \
     -o "${INSTALL_PREFIX}/wasm/icu-side.wasm"
 
 echo "Built: ${INSTALL_PREFIX}/wasm/icu-side.wasm"

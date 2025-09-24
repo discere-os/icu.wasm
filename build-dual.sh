@@ -146,11 +146,14 @@ build_side_module() {
     # Create SIDE_MODULE WASM with SIMD optimizations
     local install_dir="$(pwd)/install-side"
     emcc -O3 -flto -msimd128 -sSIDE_MODULE=2 -sSTANDALONE_WASM=1 \
-        -sEXPORTED_FUNCTIONS='["_u_init","_u_cleanup","_u_getVersion","_ucol_open","_ucol_close","_ucol_compare","_udat_open","_udat_close","_udat_format","_unum_open","_unum_close","_unum_formatDouble","_unorm2_getInstance","_unorm2_normalize","_ustring_compare","_icu_simd_available","_icu_is_ascii_simd","_icu_validate_utf8_simd","_icu_string_compare_simd","_icu_to_upper_ascii_simd","_icu_to_lower_ascii_simd","_icu_find_char_simd","_icu_count_combining_marks_simd","_icu_benchmark_string_ops_simd","_icu_benchmark_comparison"]' \
+        -sEXPORTED_FUNCTIONS='["_u_init","_u_cleanup","_u_getVersion","_ucol_open","_ucol_close","_ucol_compare","_udat_open","_udat_close","_udat_format","_unum_open","_unum_close","_unum_formatDouble","_unorm2_getInstance","_unorm2_normalize","_ustring_compare","_icu_simd_available","_icu_is_ascii_simd","_icu_validate_utf8_simd","_icu_string_compare_simd","_icu_to_upper_ascii_simd","_icu_to_lower_ascii_simd","_icu_find_char_simd","_icu_count_combining_marks_simd","_icu_benchmark_string_ops_simd","_icu_benchmark_comparison","_detect_intl_capabilities","_log_intl_capabilities","_can_delegate_number_format","_can_delegate_date_format","_can_delegate_collation","_format_number_hybrid","_format_date_hybrid","_compare_strings_hybrid","_get_plural_rule_hybrid","_format_list_hybrid"]' \
         "$install_dir/lib/libicui18n_wasm.a" \
         "$install_dir/lib/libicuuc_wasm.a" \
         "$install_dir/lib/libicudata_wasm.a" \
         "../wasm/icu_simd.c" \
+        "../wasm/web_native_intl_capabilities.c" \
+        "../wasm/web_native_intl_delegation.c" \
+        "../wasm/web_native_intl_hybrid.c" \
         -o "${INSTALL_PREFIX}/wasm/icu-side.wasm"
 
     log_success "SIDE_MODULE: ${INSTALL_PREFIX}/wasm/icu-side.wasm"
@@ -219,6 +222,9 @@ build_main_module() {
         "$install_dir/lib/libicuuc_wasm.a" \
         "$install_dir/lib/libicudata_wasm.a" \
         "../wasm/icu_simd.c" \
+        "../wasm/web_native_intl_capabilities.c" \
+        "../wasm/web_native_intl_delegation.c" \
+        "../wasm/web_native_intl_hybrid.c" \
         -o "${INSTALL_PREFIX}/wasm/icu-main.js"
 
     log_success "MAIN_MODULE: ${INSTALL_PREFIX}/wasm/icu-main.js"
