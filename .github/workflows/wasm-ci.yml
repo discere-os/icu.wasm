@@ -1,465 +1,216 @@
-name: ICU.wasm CI/CD
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [wasm]
+    branches: [ wasm ]
+    tags: [ 'v*' ]
   pull_request:
-    branches: [wasm]
-  release:
-    types: [created]
-
-env:
-  EMSCRIPTEN_VERSION: '4.0.14'
-  NODE_VERSION: '22'
+    branches: [ wasm ]
 
 jobs:
-  build:
-    name: Build & Test ICU.wasm
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        config: [Release, Debug]
-        optimization: [ON, OFF]
-      fail-fast: false
-    
+  test:
+    name: Test Suite (Deno)
+    runs-on: [self-hosted, docker, wasm, emscripten]
+    container:
+      image: ghcr.io/discere-os/wasm-builder:main-b23d443
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
-          fetch-depth: 1
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: 'package-lock.json'
-      
-      - name: Setup Emscripten SDK
-        uses: mymindstorm/setup-emsdk@v14
-        with:
-          version: ${{ env.EMSCRIPTEN_VERSION }}
-          actions-cache-folder: 'emsdk-cache'
-          no-cache: false
-          update: false
-      
-      - name: Install dependencies
-        run: |
-          # Install system dependencies for ICU build
-          sudo apt-get update
-          sudo apt-get install -y \
-            autoconf automake libtool pkg-config \
-            build-essential cmake ninja-build \
-            python3-pip
-          
-          # Install Node.js dependencies
-          if [ -f package.json ]; then
-            npm ci
-          fi
-      
-      - name: Verify ICU source
-        run: |
-          # Download and prepare ICU4C source if not present
-          if [ ! -d icu4c/source ]; then
-            echo "📥 Downloading ICU4C source..."
-            ICU_VERSION="75.1"
-            wget -q "https://github.com/unicode-org/icu/releases/download/release-75-1/icu4c-75_1-src.tgz"
-            tar -xzf icu4c-75_1-src.tgz
-            rm icu4c-75_1-src.tgz
-          fi
-          
-          # Verify source integrity
-          ls -la icu4c/source/
-          echo "✅ ICU4C source verified"
-      
-      - name: Configure build matrix
-        id: config
-        run: |
-          if [ "${{ matrix.config }}" = "Release" ]; then
-            echo "build_type=Release" >> $GITHUB_OUTPUT
-            echo "cmake_build_type=Release" >> $GITHUB_OUTPUT
-          else
-            echo "build_type=Debug" >> $GITHUB_OUTPUT
-            echo "cmake_build_type=Debug" >> $GITHUB_OUTPUT
-          fi
-          
-          if [ "${{ matrix.optimization }}" = "ON" ]; then
-            echo "optimization=ON" >> $GITHUB_OUTPUT
-            echo "opt_suffix=-opt" >> $GITHUB_OUTPUT
-          else
-            echo "optimization=OFF" >> $GITHUB_OUTPUT
-            echo "opt_suffix=" >> $GITHUB_OUTPUT
-          fi
-      
-      - name: Build ICU.wasm
-        run: |
-          echo "🔨 Building ICU.wasm (${{ matrix.config }}, Optimization: ${{ matrix.optimization }})"
-          
-          # Set environment variables for build configuration
-          export BUILD_TYPE="${{ steps.config.outputs.build_type }}"
-          export OPTIMIZATION="${{ steps.config.outputs.optimization }}"
-          
-          # Run the build script
-          chmod +x build-wasm.sh
-          ./build-wasm.sh
-        env:
-          ICU_BUILD_CONFIG: ${{ matrix.config }}
-          ICU_OPTIMIZATION: ${{ matrix.optimization }}
-      
-      - name: Validate WASM modules
-        run: |
-          echo "🔍 Validating WASM modules..."
-          
-          # Check that WASM files were generated
-          for module in icu.wasm icu-core.wasm icu-i18n.wasm; do
-            if [ -f "dist/$module" ]; then
-              # Check WASM magic number
-              magic=$(xxd -l 4 -p "dist/$module" 2>/dev/null || echo "")
-              if [ "$magic" = "0061736d" ]; then
-                size=$(stat -c%s "dist/$module")
-                echo "✅ $module: Valid WASM binary ($(numfmt --to=iec-i --suffix=B $size))"
-              else
-                echo "❌ $module: Invalid WASM binary"
-                exit 1
-              fi
-            else
-              echo "❌ $module: File not found"
-              exit 1
-            fi
-          done
-          
-          # Validate JavaScript modules
-          for jsmod in icu.js icu-wasm.js; do
-            if [ -f "dist/$jsmod" ]; then
-              echo "✅ $jsmod: JavaScript module exists"
-            else
-              echo "❌ $jsmod: JavaScript module missing"
-              exit 1
-            fi
-          done
-          
-          # Validate TypeScript definitions
-          if [ -f "dist/icu-wasm.d.ts" ]; then
-            echo "✅ TypeScript definitions exist"
-          else
-            echo "❌ TypeScript definitions missing"
-            exit 1
-          fi
-      
-      - name: Run basic tests
-        run: |
-          echo "🧪 Running basic functionality tests..."
-          
-          # Run basic test
-          node test/basic-test.mjs
-          
-          echo "✅ Basic tests passed"
-      
-      - name: Run comprehensive tests
-        if: matrix.config == 'Release'
-        run: |
-          echo "🧪 Running comprehensive test suite..."
-          
-          # Run full test suite (only for Release builds to save CI time)
-          timeout 300 node test/test-icu-wasm.js || {
-            echo "❌ Comprehensive tests failed or timed out"
-            exit 1
-          }
-          
-          echo "✅ Comprehensive tests passed"
-      
-      - name: Generate build artifacts
-        run: |
-          echo "📦 Generating build artifacts..."
-          
-          # Create artifact directory
-          mkdir -p artifacts
-          
-          # Copy WASM modules
-          cp dist/*.wasm artifacts/
-          cp dist/*.js artifacts/
-          cp dist/*.d.ts artifacts/
-          
-          # Generate build metadata
-          cat > artifacts/build-metadata.json << EOF
-          {
-            "config": "${{ matrix.config }}",
-            "optimization": "${{ matrix.optimization }}",
-            "emscripten_version": "${{ env.EMSCRIPTEN_VERSION }}",
-            "node_version": "${{ env.NODE_VERSION }}",
-            "build_time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "commit": "${{ github.sha }}",
-            "ref": "${{ github.ref }}",
-            "files": $(ls -la dist/ | tail -n +2 | wc -l)
-          }
-          EOF
-          
-          echo "📊 Artifact contents:"
-          ls -la artifacts/
-      
+
+      - name: Type check
+        run: deno check src/lib/index.ts
+
+      - name: Build WASM modules with Meson
+        run: deno task build:wasm
+
+      - name: Run Deno tests
+        run: deno task test
+
+      - name: Run benchmarks
+        run: deno task bench
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: icu-wasm-${{ matrix.config }}-opt-${{ matrix.optimization }}
-          path: artifacts/
-          retention-days: 30
-          compression-level: 9
-      
-      - name: Build summary
-        run: |
-          # Generate GitHub Actions summary
-          echo "## 📊 Build Summary - ${{ matrix.config }} (Optimization: ${{ matrix.optimization }})" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Module | Size | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|--------|------|--------|" >> $GITHUB_STEP_SUMMARY
-          
-          for module in icu.wasm icu-core.wasm icu-i18n.wasm; do
-            if [ -f "dist/$module" ]; then
-              size=$(stat -c%s "dist/$module")
-              size_human=$(numfmt --to=iec-i --suffix=B $size)
-              echo "| $module | $size_human | ✅ Built |" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "| $module | - | ❌ Missing |" >> $GITHUB_STEP_SUMMARY
-            fi
-          done
-          
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Build Configuration:**" >> $GITHUB_STEP_SUMMARY
-          echo "- Config: ${{ matrix.config }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Optimization: ${{ matrix.optimization }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Emscripten: ${{ env.EMSCRIPTEN_VERSION }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Node.js: ${{ env.NODE_VERSION }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          name: wasm-modules
+          path: |
+            install/wasm/
+          retention-days: 7
 
-  performance:
-    name: Performance Benchmarks
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.event_name != 'pull_request'
-    
+  build:
+    name: Build Distribution
+    runs-on: [self-hosted, docker, wasm, emscripten]
+    needs: test
+    container:
+      image: ghcr.io/discere-os/wasm-builder:main-b23d443
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-      
-      - name: Download Release optimized artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: icu-wasm-Release-opt-ON
-          path: dist/
-      
-      - name: Install dependencies
+
+      - name: Build WASM modules
+        run: deno task build:wasm
+
+      - name: Fix artifact permissions
         run: |
-          if [ -f package.json ]; then
-            npm ci
+          # Ensure artifacts are readable by runner (files created as root in container)
+          sudo chown -R $(id -u):$(id -g) install/ || chown -R $(id -u):$(id -g) install/
+          chmod -R u+rw,go+r install/
+
+      - name: Generate WASM Build Summary
+        run: |
+          echo "# 📦 WASM Build Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Build artifacts analysis
+          if [[ -f "install/wasm/icu-side.wasm" && -f "install/wasm/icu-main" ]]; then
+            SIDE_SIZE=$(stat -c%s "install/wasm/icu-side.wasm" 2>/dev/null || stat -f%z "install/wasm/icu-side.wasm")
+
+            echo "## File Sizes" >> $GITHUB_STEP_SUMMARY
+            echo "| Module | Size |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|------|" >> $GITHUB_STEP_SUMMARY
+            echo "| SIDE_MODULE | $(numfmt --to=iec $SIDE_SIZE 2>/dev/null || echo "${SIDE_SIZE} bytes") |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Build artifacts not found" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
           fi
-      
-      - name: Run performance benchmarks
-        run: |
-          echo "🚀 Running ICU.wasm performance benchmarks..."
-          
-          # Enable garbage collection for memory benchmarks
-          export NODE_OPTIONS="--expose-gc"
-          
-          # Run performance tests with timeout
-          timeout 600 node test/performance-test.js || {
-            echo "❌ Performance benchmarks failed or timed out"
-            exit 1
-          }
-          
-          echo "✅ Performance benchmarks completed"
-      
-      - name: Upload benchmark results
+
+          # Build environment info
+          echo "## Build Environment" >> $GITHUB_STEP_SUMMARY
+          echo "- **Emscripten**: \`$(emcc --version | head -n1 | cut -d' ' -f2)\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Meson**: \`$(meson --version)\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deno**: \`$(deno --version | head -n1 | cut -d' ' -f2)\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Runner**: \`$(uname -m)\` $(uname -s)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload dist artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: benchmark-results
-          path: benchmark-results.json
-          retention-days: 90
-      
-      - name: Performance summary
-        run: |
-          # Generate performance summary for GitHub Actions
-          if [ -f benchmark-results.json ]; then
-            echo "## 🚀 Performance Benchmark Results" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            
-            # Extract key metrics using jq if available, otherwise use basic parsing
-            if command -v jq &> /dev/null; then
-              total_benchmarks=$(jq -r '.summary.totalBenchmarks // 0' benchmark-results.json)
-              echo "**Total benchmarks:** $total_benchmarks" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-              
-              echo "**Performance Categories:**" >> $GITHUB_STEP_SUMMARY
-              jq -r '.summary.averagePerformance | to_entries[] | "- \(.key): \(.value.avgTime | tostring | .[0:5])ms avg"' benchmark-results.json >> $GITHUB_STEP_SUMMARY || true
-              
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "**vs Native JavaScript APIs:**" >> $GITHUB_STEP_SUMMARY
-              jq -r '.summary.comparisons | to_entries[] | if .value > 1 then "- \(.key): \(.value | tostring | .[0:4])x faster" else "- \(.key): \(1/.value | tostring | .[0:4])x slower" end' benchmark-results.json >> $GITHUB_STEP_SUMMARY || true
-            else
-              echo "Benchmark results generated successfully" >> $GITHUB_STEP_SUMMARY
-            fi
-            
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "📁 Full results uploaded as artifact: \`benchmark-results\`" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ Benchmark results file not found" >> $GITHUB_STEP_SUMMARY
-          fi
+          name: dist-package
+          path: |
+            install/
+          retention-days: 7
 
-  release:
-    name: Create Release
-    runs-on: ubuntu-latest
-    needs: [build, performance]
-    if: github.event_name == 'release'
-    
+  deploy-cloudflare-release:
+    name: Deploy Release to Cloudflare R2
+    runs-on: [self-hosted, docker, wasm, emscripten]
+    needs: [build]
+    if: startsWith(github.ref, 'refs/tags/v')
+    container:
+      image: ghcr.io/discere-os/wasm-builder:main-b23d443
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
-      - name: Download all artifacts
+
+      - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          path: release-artifacts/
-      
-      - name: Prepare release package
-        run: |
-          echo "📦 Preparing release package..."
-          
-          # Create release directory structure
-          mkdir -p release/
-          
-          # Copy optimized release artifacts
-          if [ -d "release-artifacts/icu-wasm-Release-opt-ON" ]; then
-            cp -r release-artifacts/icu-wasm-Release-opt-ON/* release/
-          fi
-          
-          # Copy benchmark results
-          if [ -f "release-artifacts/benchmark-results/benchmark-results.json" ]; then
-            cp release-artifacts/benchmark-results/benchmark-results.json release/
-          fi
-          
-          # Generate release manifest
-          cat > release/MANIFEST.md << EOF
-          # ICU.wasm Release Package
-          
-          **Version:** ${GITHUB_REF#refs/tags/}
-          **Build Date:** $(date -u +%Y-%m-%dT%H:%M:%SZ)
-          **Commit:** ${{ github.sha }}
-          
-          ## Files Included
-          
-          $(ls -la release/ | tail -n +2 | awk '{print "- " $9 " (" $5 " bytes)"}')
-          
-          ## Usage
-          
-          \`\`\`javascript
-          import ICU from './icu.js';
-          import ICUWASM from './icu-wasm.js';
-          
-          const wasmModule = await ICU();
-          const icu = new ICUWASM(wasmModule);
-          await icu.initialize();
-          \`\`\`
-          
-          See README-WASM.md for complete documentation.
-          EOF
-          
-          # Create release archive
-          cd release/
-          tar -czf ../icu-wasm-${GITHUB_REF#refs/tags/}.tar.gz *
-          cd ..
-          
-          echo "✅ Release package prepared"
-      
-      - name: Calculate checksums
-        run: |
-          echo "🔐 Calculating checksums..."
-          
-          cd release/
-          sha256sum * > ../SHA256SUMS
-          cd ..
-          
-          echo "✅ Checksums calculated"
-          cat SHA256SUMS
-      
-      - name: Upload release assets
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            icu-wasm-*.tar.gz
-            SHA256SUMS
-          body: |
-            ## ICU.wasm Release
-            
-            International Components for Unicode (ICU) compiled to WebAssembly.
-            
-            ### System Tier 2 Features
-            - Complete Unicode normalization support
-            - Text collation and sorting for 200+ locales
-            - Date/time formatting with locale support
-            - Number formatting including currency and percentages
-            - Modular architecture with selective loading
-            
-            ### Performance
-            See attached benchmark-results.json for detailed performance metrics.
-            
-            ### Installation
-            ```bash
-            # Extract release package
-            tar -xzf icu-wasm-*.tar.gz
-            
-            # Use in your project
-            import ICU from './icu.js';
-            import ICUWASM from './icu-wasm.js';
-            ```
-            
-            ### Verification
-            Verify package integrity using SHA256 checksums:
-            ```bash
-            sha256sum -c SHA256SUMS
-            ```
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: dist-package
+          path: ./install
 
-  cleanup:
-    name: Cleanup
-    runs-on: ubuntu-latest
-    needs: [build, performance, release]
-    if: always()
-    
+      - name: Set release version
+        id: release-version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Calculate SHA-256
+        id: sha
+        run: |
+          WASM_FILE="install/wasm/icu-side.wasm"
+          SHA=$(sha256sum "$WASM_FILE" | awk '{print $1}')
+          echo "sha=${SHA}" >> $GITHUB_OUTPUT
+          echo "${SHA}" > "${WASM_FILE}.sha256"
+          echo "🔒 SHA-256: ${SHA}"
+
+      - name: Deploy to Cloudflare R2
+        run: |
+          VERSION="${{ steps.release-version.outputs.VERSION }}"
+          SHA="${{ steps.sha.outputs.sha }}"
+
+          # Deploy SIDE_MODULE to versioned path (immutable)
+          wrangler r2 object put discere-os-wasm-production/icu@${VERSION}/side.wasm \
+            --remote \
+            --file=install/wasm/icu-side.wasm \
+            --content-type=application/wasm \
+            --cache-control="public, max-age=31536000, immutable"
+
+          # Deploy to SHA path (content-addressable)
+          wrangler r2 object put discere-os-wasm-production/icu@sha-${SHA:0:7}/side.wasm \
+            --remote \
+            --file=install/wasm/icu-side.wasm \
+            --content-type=application/wasm \
+            --cache-control="public, max-age=31536000, immutable"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Verify deployment
+        run: |
+          sleep 15
+          VERSION="${{ steps.release-version.outputs.VERSION }}"
+          curl -I "https://wasm.discere.cloud/icu@${VERSION}/side.wasm" || exit 1
+          echo "✅ Cloudflare R2 deployment verified"
+
+  deploy-cloudflare-snapshot:
+    name: Deploy Snapshot to Cloudflare R2
+    runs-on: [self-hosted, docker, wasm, emscripten]
+    needs: [build]
+    if: github.ref == 'refs/heads/wasm' && github.event_name == 'push'
+    container:
+      image: ghcr.io/discere-os/wasm-builder:main-b23d443
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
-      - name: Cleanup old artifacts
-        uses: actions/github-script@v7
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
         with:
-          script: |
-            // Clean up artifacts older than 30 days to save storage
-            const { data: artifacts } = await github.rest.actions.listArtifactsForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              per_page: 100
-            });
-            
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            
-            for (const artifact of artifacts.artifacts) {
-              const createdAt = new Date(artifact.created_at);
-              if (createdAt < thirtyDaysAgo && !artifact.name.includes('benchmark-results')) {
-                console.log(`Deleting old artifact: ${artifact.name}`);
-                try {
-                  await github.rest.actions.deleteArtifact({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    artifact_id: artifact.id
-                  });
-                } catch (error) {
-                  console.log(`Failed to delete artifact ${artifact.name}: ${error.message}`);
-                }
-              }
-            }
+          name: dist-package
+          path: ./install
+
+      - name: Set snapshot version
+        id: version
+        run: echo "VERSION=sha-$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Calculate SHA-256 and generate metadata
+        id: metadata
+        run: |
+          WASM_FILE="install/wasm/icu-side.wasm"
+          SHA=$(sha256sum "$WASM_FILE" | awk '{print $1}')
+          SIZE=$(stat -c%s "$WASM_FILE")
+
+          echo "sha=${SHA}" >> $GITHUB_OUTPUT
+          echo "size=${SIZE}" >> $GITHUB_OUTPUT
+          echo "${SHA}" > "${WASM_FILE}.sha256"
+
+          echo "🔒 SHA-256: ${SHA}"
+          echo "📦 Size: $((SIZE / 1024)) KB"
+
+      - name: Deploy snapshot to Cloudflare R2
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+
+          # Deploy SIDE_MODULE only (MAIN_MODULE for testing/NPM only)
+          wrangler r2 object put discere-os-wasm-production/icu@${VERSION}/side.wasm \
+            --remote \
+            --file=install/wasm/icu-side.wasm \
+            --content-type=application/wasm \
+            --cache-control="public, max-age=31536000, immutable"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
