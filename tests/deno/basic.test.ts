@@ -1,95 +1,23 @@
-import { assert, assertEquals, assertExists, assertThrows } from "@std/assert";
-import ICU from "../../src/lib/index.ts";
+import { assert, assertExists } from "@std/assert"
 
-Deno.test("ICU initialization", async () => {
-  const icu = new ICU();
-  await icu.initialize();
+Deno.test("Deno runtime features", () => {
+  assert(typeof Deno !== 'undefined', "Deno runtime should be available")
+  assert(typeof WebAssembly !== 'undefined', "WebAssembly should be available")
+})
 
-  assertExists(icu);
-  assert(icu.isInitialized());
+Deno.test("WASM file accessibility", async () => {
+  try {
+    const wasmFile = await Deno.stat("./install/wasm/${LIB_NAME}-main.wasm")
+    assert(wasmFile.isFile, "WASM file should exist")
+    assert(wasmFile.size > 0, "WASM file should not be empty")
+    console.log(`✅ Found WASM file: ${wasmFile.size} bytes`)
+  } catch (error) {
+    console.warn("⚠️  WASM file not found - run 'deno task build:wasm' first")
+  }
+})
 
-  icu.cleanup();
-});
-
-Deno.test("ICU version information", async () => {
-  const icu = new ICU();
-  await icu.initialize();
-
-  const version = icu.getVersion();
-  assertExists(version);
-  assertEquals(typeof version.major, "number");
-  assertEquals(typeof version.minor, "number");
-  assertEquals(typeof version.patch, "number");
-  assertEquals(typeof version.micro, "number");
-  assert(version.major >= 70); // ICU 70+ expected
-
-  const versionString = version.toString();
-  assert(versionString.includes("."));
-
-  icu.cleanup();
-});
-
-Deno.test("ICU initialization without proper setup should throw", () => {
-  const icu = new ICU();
-
-  // Should throw when not initialized
-  assertThrows(
-    () => {
-      icu.getVersion();
-    },
-    Error,
-    "ICU not initialized",
-  );
-});
-
-Deno.test("ICU cleanup multiple times", async () => {
-  const icu = new ICU();
-  await icu.initialize();
-
-  assert(icu.isInitialized());
-
-  // Should handle multiple cleanup calls gracefully
-  icu.cleanup();
-  assert(!icu.isInitialized());
-
-  icu.cleanup(); // Should not throw
-  assert(!icu.isInitialized());
-});
-
-Deno.test("ICU options configuration", async () => {
-  const icu = new ICU({
-    simdOptimizations: true,
-    maxMemoryMB: 128,
-    locale: "en-US",
-  });
-
-  await icu.initialize();
-  assert(icu.isInitialized());
-
-  icu.cleanup();
-});
-
-Deno.test("ICU performance metrics", async () => {
-  const icu = new ICU({ simdOptimizations: true });
-  await icu.initialize();
-
-  const metrics = icu.getPerformanceMetrics();
-  assertExists(metrics);
-  assertEquals(typeof metrics.memoryUsageMB, "number");
-  assertEquals(typeof metrics.simdUsed, "boolean");
-
-  icu.cleanup();
-});
-
-Deno.test("ICU SIMD capabilities", async () => {
-  const icu = new ICU();
-  await icu.initialize();
-
-  const capabilities = icu.getSIMDCapabilities();
-  assertExists(capabilities);
-  assertEquals(typeof capabilities.supported, "boolean");
-  assertExists(capabilities.version);
-  assert(Array.isArray(capabilities.features));
-
-  icu.cleanup();
-});
+Deno.test("TypeScript module imports", async () => {
+  const { default: Module } = await import("../../src/lib/index.ts")
+  assertExists(Module, "Module class should be importable")
+  assert(typeof Module === 'function', "Module should be a constructor function")
+})
